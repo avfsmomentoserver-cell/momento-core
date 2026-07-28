@@ -9,22 +9,37 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
+from collections import deque
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Deque, Dict, List, Optional, Set
 
 from fastapi import WebSocket
 
 logger = logging.getLogger("momento.hub")
 
+# Number of recent broadcast latency samples (seconds) to retain for the
+# self-awareness snapshot. Bounded so memory stays flat under load.
+_LATENCY_WINDOW = 256
+
 
 class Hub:
-    """Tracks live sockets and fans messages out to them."""
+    """Tracks live sockets and fans messages out to them.
+
+    v5 additions (backward compatible): per-type counters, bounded broadcast
+    latency samples, dropped-socket accounting and a ``health()`` snapshot that
+    feeds the self-awareness layer. The message envelope is unchanged.
+    """
 
     def __init__(self) -> None:
         self._clients: Set[WebSocket] = set()
         self._lock = asyncio.Lock()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._sent = 0
+        self._dropped = 0
+        self._by_type: Dict[str, int] = {}
+        self._latencies: Deque[float] = deque(maxlen=_LATENCY_WINDOW)
+        self._last_broadcast_at: Optional[str] = None
 
     def bind_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         """Remember the API event loop so sync code can schedule broadcasts."""
@@ -50,9 +65,15 @@ class Hub:
         logger.info("websocket disconnected (clients=%d)", len(self._clients))
 
     async def broadcast(self, message_type: str, payload: Any) -> None:
-        """Send one envelope to every connected client, dropping dead sockets."""
+        """Send one envelope to every connected client, dropping dead sockets.
+
+        Records fan-out latency and per-type counts for the self-awareness
+        snapshot. Returns early (still cheap) when there are no clients.
+        """
+        self._by_type[message_type] = self._by_type.get(message_type, 0) + 1
         if not self._clients:
             return
+        started = time.perf_counter()
         envelope = {
             "type": message_type,
             "payload": payload,
@@ -70,9 +91,13 @@ class Hub:
                 dead.append(socket)
 
         if dead:
+            self._dropped += len(dead)
             async with self._lock:
                 for socket in dead:
                     self._clients.discard(socket)
+
+        self._latencies.append(time.perf_counter() - started)
+        self._last_broadcast_at = envelope["timestamp"]
 
     def broadcast_threadsafe(self, message_type: str, payload: Any) -> None:
         """Schedule a broadcast from a non-async thread (the file watcher)."""
@@ -85,6 +110,33 @@ class Hub:
 
     def stats(self) -> Dict[str, Any]:
         return {"clients": self.client_count, "messages_sent": self._sent}
+
+    def health(self) -> Dict[str, Any]:
+        """Self-awareness snapshot of the realtime fan-out layer.
+
+        Exposes latency (avg/p95 in milliseconds), throughput, dropped sockets
+        and per-type counts so the platform can monitor and reason about its own
+        realtime behaviour (v5 self-awareness foundation).
+        """
+        samples = sorted(self._latencies)
+        avg_ms = (sum(samples) / len(samples) * 1000.0) if samples else 0.0
+        if samples:
+            idx = min(len(samples) - 1, int(round(0.95 * (len(samples) - 1))))
+            p95_ms = samples[idx] * 1000.0
+        else:
+            p95_ms = 0.0
+        return {
+            "clients": self.client_count,
+            "messages_sent": self._sent,
+            "messages_dropped": self._dropped,
+            "broadcast_latency_ms": {
+                "avg": round(avg_ms, 3),
+                "p95": round(p95_ms, 3),
+                "samples": len(samples),
+            },
+            "by_type": dict(self._by_type),
+            "last_broadcast_at": self._last_broadcast_at,
+        }
 
 
 hub = Hub()
