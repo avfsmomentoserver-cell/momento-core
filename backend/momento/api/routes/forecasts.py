@@ -79,6 +79,12 @@ async def transitions(
     }
 
 
+@router.get("/forecasts/self-awareness")
+async def forecast_self_awareness(source: str = Depends(source_param)) -> Dict[str, Any]:
+    """Accuracy-drift self-awareness: is the engine losing edge over time?"""
+    return {"source": source, **forecast_engine.accuracy_drift(source)}
+
+
 @router.get("/calibration/status")
 async def calibration_status(source: str = Depends(source_param)) -> Dict[str, Any]:
     acc = forecast_engine.accuracy(source)
