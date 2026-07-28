@@ -12,6 +12,12 @@ import ProPredictions from "./pages/app/ProPredictions";
 import Today from "./pages/app/Today";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import AdminCandidates from "./pages/dashboard/AdminCandidates";
+import AdminDashboard from "./pages/dashboard/AdminDashboard";
+import AdminDiscovery from "./pages/dashboard/AdminDiscovery";
+import AdminFeatures from "./pages/dashboard/AdminFeatures";
+import AdminLearning from "./pages/dashboard/AdminLearning";
+import V5Admin from "./pages/dashboard/V5Admin";
 import Autopilot from "./pages/dashboard/Autopilot";
 import BirdEye from "./pages/dashboard/BirdEye";
 import BuildSteps from "./pages/dashboard/BuildSteps";
@@ -90,6 +96,14 @@ const App = () => (
               <Route path="/dashboard/settings" element={<Settings />} />
               <Route path="/dashboard/users" element={<Users />} />
               <Route path="/dashboard/testing" element={<RoundTesting />} />
+
+              {/* admin */}
+              <Route path="/dashboard/admin" element={<AdminDashboard />} />
+              <Route path="/dashboard/admin/features" element={<AdminFeatures />} />
+              <Route path="/dashboard/admin/learning" element={<AdminLearning />} />
+              <Route path="/dashboard/admin/discovery" element={<AdminDiscovery />} />
+              <Route path="/dashboard/admin/candidates" element={<AdminCandidates />} />
+              <Route path="/dashboard/admin/v5" element={<V5Admin />} />
 
               {/* cross-cutting surfaces */}
               <Route path="/orchestrator" element={<Orchestrator />} />

@@ -15,6 +15,11 @@ import time
 from typing import Any, Dict, List, Optional
 
 from . import config, db
+from .scope_auth import (
+    get_user_primary_tenant,
+    get_user_scopes,
+    issue_scope_token,
+)
 
 PBKDF2_ROUNDS = 120_000
 ROLES = ("user", "analyst", "operator", "admin")

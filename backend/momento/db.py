@@ -15,6 +15,8 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence
 
 from . import config
 from .vocabulary_schema import VOCABULARY_SCHEMA
+from .commercial_schema import COMMERCIAL_SCHEMA
+from .multi_scope_schema import MULTI_SCOPE_SCHEMA
 
 _LOCK = threading.RLock()
 _LOCAL = threading.local()
@@ -219,7 +221,7 @@ CREATE TABLE IF NOT EXISTS top_rounds (
 );
 CREATE INDEX IF NOT EXISTS idx_top_rounds_source_session ON top_rounds (source, session_id, timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_top_rounds_day ON top_rounds (source, day_date, hour_interval);
-""" + "\n" + VOCABULARY_SCHEMA
+""" + "\n" + VOCABULARY_SCHEMA + "\n" + COMMERCIAL_SCHEMA + "\n" + MULTI_SCOPE_SCHEMA
 
 
 def utc_now() -> str:
