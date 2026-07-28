@@ -33,6 +33,10 @@ class Hub:
 
     def __init__(self) -> None:
         self._clients: Set[WebSocket] = set()
+        # Optional per-socket source subscription. A socket absent from this
+        # map (or mapped to None) is treated as a global listener and receives
+        # every source-routed message, preserving pre-v5 behaviour.
+        self._subscriptions: Dict[WebSocket, Optional[str]] = {}
         self._lock = asyncio.Lock()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._sent = 0
@@ -62,7 +66,17 @@ class Hub:
     async def disconnect(self, socket: WebSocket) -> None:
         async with self._lock:
             self._clients.discard(socket)
+            self._subscriptions.pop(socket, None)
         logger.info("websocket disconnected (clients=%d)", len(self._clients))
+
+    async def subscribe(self, socket: WebSocket, source: Optional[str]) -> None:
+        """Bind a socket to a single source channel.
+
+        Passing ``None`` restores the socket to a global listener that receives
+        every source-routed message.
+        """
+        async with self._lock:
+            self._subscriptions[socket] = source
 
     async def broadcast(self, message_type: str, payload: Any) -> None:
         """Send one envelope to every connected client, dropping dead sockets.
@@ -99,6 +113,59 @@ class Hub:
         self._latencies.append(time.perf_counter() - started)
         self._last_broadcast_at = envelope["timestamp"]
 
+    async def broadcast_source(self, source: str, message_type: str, payload: Any) -> None:
+        """Fan a message out only to sockets subscribed to ``source``.
+
+        Global listeners (sockets with no source subscription) also receive it,
+        so nothing that previously relied on a full broadcast is starved. This
+        is the v5 hot-path optimisation: a client watching ``aviator`` no longer
+        wakes up for ``skyward`` traffic.
+        """
+        self._by_type[message_type] = self._by_type.get(message_type, 0) + 1
+        if not self._clients:
+            return
+        started = time.perf_counter()
+        envelope = {
+            "type": message_type,
+            "payload": payload,
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
+        }
+        async with self._lock:
+            targets: List[WebSocket] = [
+                sock
+                for sock in self._clients
+                if self._subscriptions.get(sock) in (None, source)
+            ]
+
+        dead: List[WebSocket] = []
+        for socket in targets:
+            try:
+                await socket.send_json(envelope)
+                self._sent += 1
+            except Exception:
+                dead.append(socket)
+
+        if dead:
+            self._dropped += len(dead)
+            async with self._lock:
+                for socket in dead:
+                    self._clients.discard(socket)
+                    self._subscriptions.pop(socket, None)
+
+        self._latencies.append(time.perf_counter() - started)
+        self._last_broadcast_at = envelope["timestamp"]
+
+    def broadcast_source_threadsafe(self, source: str, message_type: str, payload: Any) -> None:
+        """Schedule a source-routed broadcast from a non-async thread."""
+        if self._loop is None or self._loop.is_closed():
+            return
+        try:
+            asyncio.run_coroutine_threadsafe(
+                self.broadcast_source(source, message_type, payload), self._loop
+            )
+        except RuntimeError:
+            logger.debug("event loop unavailable, dropping %s broadcast", message_type)
+
     def broadcast_threadsafe(self, message_type: str, payload: Any) -> None:
         """Schedule a broadcast from a non-async thread (the file watcher)."""
         if self._loop is None or self._loop.is_closed():
@@ -129,6 +196,7 @@ class Hub:
             "clients": self.client_count,
             "messages_sent": self._sent,
             "messages_dropped": self._dropped,
+            "subscribed_clients": sum(1 for v in self._subscriptions.values() if v is not None),
             "broadcast_latency_ms": {
                 "avg": round(avg_ms, 3),
                 "p95": round(p95_ms, 3),
