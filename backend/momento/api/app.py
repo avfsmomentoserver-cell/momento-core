@@ -14,23 +14,37 @@ from fastapi.responses import JSONResponse
 
 from .. import __version__, auth, config, db, plugins
 from ..feed import autostart_if_configured, feed
+from ..fpga_ingest import get_pipeline
 from ..hub import hub
+from ..stream_optimizer import get_optimizer
 from ..watcher import watcher
+from ..security_config import security_config
+from ..security import (
+    ZeroTrustMiddleware,
+    SecurityHeadersMiddleware,
+    security_monitor,
+    audit_logger,
+)
 from .routes import analysis as analysis_routes
 from .routes import backtest as backtest_routes
 from .routes import backtest_enhanced as backtest_enhanced_routes
 from .routes import core as core_routes
 from .routes import engines as engines_routes
+from .routes import fpga as fpga_routes
 from .routes import features as features_routes
 from .routes import forecasts as forecast_routes
+from .routes import gpu as gpu_routes
 from .routes import ingest as ingest_routes
 from .routes import market as market_routes
 from .routes import mega_pressure as mega_pressure_routes
 from .routes import platform as platform_routes
 from .routes import rounds as rounds_routes
+from .routes import scopes as scopes_routes
 from .routes import users as users_routes
 from .routes import vocabulary as vocabulary_routes
+from .routes import v5_admin as v5_admin_routes
 from .routes import ws as ws_routes
+from .scope_gateway import ScopeGatewayMiddleware
 
 logger = logging.getLogger("momento")
 
@@ -71,12 +85,65 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     db.init_db()
     auth.bootstrap()
+    
+    # Initialize multi-scope authentication system
+    try:
+        from ..scope_init import initialize_multi_scope_schema
+        initialize_multi_scope_schema()
+    except Exception as exc:
+        logger.warning("Multi-scope initialization failed: %s", exc)
+    
     hub.bind_loop(asyncio.get_running_loop())
+
+    # V5 Security: Initialize security monitoring
+    logger.info("V5 Security Level: %s", security_config.level)
+    if security_config.monitoring.anomaly_detection_enabled:
+        logger.info("Security anomaly detection enabled")
+    if security_config.monitoring.intrusion_detection_enabled:
+        logger.info("Intrusion detection enabled")
+    if security_config.authentication.mfa_enabled:
+        logger.info("Multi-factor authentication enabled")
 
     if config.WATCHER_ENABLED:
         watcher.start()
 
     await autostart_if_configured()
+
+    # Start FPGA pipeline if enabled
+    if config.FPGA_ENABLED or config.DPDK_ENABLED:
+        fpga_pipeline = get_pipeline()
+        await fpga_pipeline.start()
+        logger.info("FPGA-accelerated ingestion pipeline started")
+
+    # Start stream optimizer if enabled
+    if config.STREAM_OPTIMIZER_ENABLED:
+        stream_optimizer = get_optimizer()
+        await stream_optimizer.start()
+        logger.info("Stream optimizer started")
+
+    # Initialize GPU intelligence if available
+    try:
+        from gpu_intelligence.integration import initialize_gpu_intelligence
+
+        gpu_initialized = initialize_gpu_intelligence()
+        if gpu_initialized:
+            logger.info("GPU intelligence subsystem initialized")
+        else:
+            logger.info("GPU not available, CPU-only mode")
+    except ImportError:
+        logger.debug("GPU intelligence module not available")
+    except Exception as exc:
+        logger.warning("GPU intelligence initialization failed: %s", exc)
+
+    # Initialize CPU intelligence for V5 free-tier
+    if config.CPU_ML_ENABLED:
+        try:
+            from cpu_intelligence import get_cpu_processor
+            cpu_processor = get_cpu_processor()
+            logger.info("V5 CPU intelligence initialized (free-tier mode)")
+        except Exception as exc:
+            logger.warning("CPU intelligence initialization failed: %s", exc)
+
     logger.info("Momento Core ready on %s:%s", config.API_HOST, config.API_PORT)
 
     try:
@@ -88,6 +155,33 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception as exc:
             logger.debug("feed shutdown: %s", exc)
         watcher.stop()
+
+        # Stop FPGA pipeline
+        try:
+            fpga_pipeline = get_pipeline()
+            await fpga_pipeline.stop()
+            logger.info("FPGA-accelerated ingestion pipeline stopped")
+        except Exception as exc:
+            logger.debug("FPGA pipeline shutdown: %s", exc)
+
+        # Stop stream optimizer
+        try:
+            stream_optimizer = get_optimizer()
+            await stream_optimizer.stop()
+            logger.info("Stream optimizer stopped")
+        except Exception as exc:
+            logger.debug("Stream optimizer shutdown: %s", exc)
+
+        # Shutdown GPU intelligence
+        try:
+            from gpu_intelligence.integration import shutdown_gpu_intelligence
+
+            shutdown_gpu_intelligence()
+            logger.info("GPU intelligence subsystem shutdown")
+        except ImportError:
+            pass
+        except Exception as exc:
+            logger.debug("GPU intelligence shutdown: %s", exc)
 
 
 def create_app() -> FastAPI:
@@ -110,6 +204,25 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # V5 Security: Add security headers middleware
+    if security_config.security_headers:
+        application.add_middleware(
+            SecurityHeadersMiddleware,
+            config=security_config.get_headers_config(),
+            sensitive_paths=["/api/v1/auth/", "/api/v1/users/", "/api/v1/admin/"],
+        )
+
+    # V5 Security: Add zero-trust middleware
+    if security_config.zero_trust_enabled:
+        application.add_middleware(
+            ZeroTrustMiddleware,
+            public_paths=security_config.public_paths,
+            strict_mode=security_config.zero_trust_strict_mode,
+        )
+
+    # Add scope gateway middleware for multi-scope authentication
+    application.add_middleware(ScopeGatewayMiddleware)
 
     @application.exception_handler(Exception)
     async def unhandled_error(request: Request, exc: Exception) -> JSONResponse:
@@ -139,6 +252,10 @@ def create_app() -> FastAPI:
         backtest_enhanced_routes,
         vocabulary_routes,
         mega_pressure_routes,
+        fpga_routes,
+        scopes_routes,
+        gpu_routes,
+        v5_admin_routes,
     ):
         application.include_router(module.router, prefix=API_PREFIX)
 

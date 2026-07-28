@@ -40,6 +40,20 @@ try:
 except ImportError:
     ALERTS_AVAILABLE = False
 
+# Import GPU intelligence
+try:
+    from gpu_intelligence.integration import (
+        gpu_percentile,
+        gpu_robust_percentiles,
+        gpu_multipliers_stats,
+        gpu_extract_round_features,
+        gpu_detect_patterns,
+        is_gpu_available,
+    )
+    GPU_AVAILABLE = True
+except ImportError:
+    GPU_AVAILABLE = False
+
 
 Round = Dict[str, Any]
 
@@ -73,7 +87,19 @@ def _safe_stdev(values: Sequence[float]) -> float:
 
 
 def percentile(values: Sequence[float], pct: float) -> float:
-    """Linear-interpolated empirical percentile (pct in 0..100)."""
+    """Linear-interpolated empirical percentile (pct in 0..100).
+
+    Uses GPU acceleration when available for better performance.
+    """
+    # Use GPU-accelerated version if available
+    if GPU_AVAILABLE and is_gpu_available() and len(values) > 100:
+        try:
+            return gpu_percentile(values, pct)
+        except Exception:
+            # Fall back to CPU implementation on error
+            pass
+
+    # CPU implementation
     if not values:
         return 0.0
     ordered = sorted(float(v) for v in values)
@@ -89,7 +115,19 @@ def percentile(values: Sequence[float], pct: float) -> float:
 
 
 def robust_percentiles(values: Sequence[float]) -> Dict[str, float]:
-    """Percentile ladder used by the prediction range and the charts."""
+    """Percentile ladder used by the prediction range and the charts.
+
+    Uses GPU acceleration when available for better performance.
+    """
+    # Use GPU-accelerated version if available
+    if GPU_AVAILABLE and is_gpu_available() and len(values) > 100:
+        try:
+            return gpu_robust_percentiles(values)
+        except Exception:
+            # Fall back to CPU implementation on error
+            pass
+
+    # CPU implementation
     return {
         "p05": percentile(values, 5),
         "p10": percentile(values, 10),
@@ -1274,6 +1312,17 @@ def analyze(rounds: Sequence[Round], settings: AnalysisSettings, toggles: config
         except Exception as e:
             logger.error(f"Alert checking failed: {e}")
 
+    # GPU-accelerated feature extraction if available
+    gpu_features = {}
+    if GPU_AVAILABLE and is_gpu_available() and len(multipliers) > 50:
+        try:
+            gpu_features = gpu_extract_round_features(rounds)
+            gpu_patterns = gpu_detect_patterns(multipliers)
+            gpu_features["patterns"] = gpu_patterns
+        except Exception as e:
+            logger.debug(f"GPU feature extraction failed: {e}")
+            gpu_features = {"error": str(e)}
+
     return {
         "source": rounds[-1].get("source") if rounds else None,
         "generated_at": datetime.utcnow().isoformat() + "Z",
@@ -1313,6 +1362,7 @@ def analyze(rounds: Sequence[Round], settings: AnalysisSettings, toggles: config
         "config": settings.as_dict(),
         "advanced_features": advanced_features,
         "alerts": alerts,
+        "gpu_features": gpu_features,
     }
 
 

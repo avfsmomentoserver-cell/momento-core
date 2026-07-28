@@ -25,6 +25,8 @@ import {
   Users,
   X,
   Zap,
+  Database,
+  Target,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { NavLink } from "react-router-dom";
@@ -94,6 +96,18 @@ const GROUPS: NavGroup[] = [
       { to: "/dashboard/settings", label: "Master Settings", icon: Settings2, operatorOnly: true },
       { to: "/dashboard/users", label: "Users", icon: Users, operatorOnly: true },
       { to: "/dashboard/testing", label: "Round Testing", icon: SlidersHorizontal, operatorOnly: true },
+      { to: "/dashboard/admin", label: "Vocabulary Admin", icon: Database, operatorOnly: true },
+      { to: "/dashboard/admin/v5", label: "V5 Transformation", icon: Target, operatorOnly: true },
+    ],
+  },
+  {
+    label: "Vocabulary Admin",
+    items: [
+      { to: "/dashboard/admin", label: "Vocabulary Dashboard", icon: Database, operatorOnly: true },
+      { to: "/dashboard/admin/features", label: "Feature Integration", icon: Blocks, operatorOnly: true },
+      { to: "/dashboard/admin/learning", label: "Learning Progress", icon: BrainCircuit, operatorOnly: true },
+      { to: "/dashboard/admin/discovery", label: "Pattern Discovery", icon: Sparkles, operatorOnly: true },
+      { to: "/dashboard/admin/candidates", label: "Vocabulary Candidates", icon: Target, operatorOnly: true },
     ],
   },
 ];

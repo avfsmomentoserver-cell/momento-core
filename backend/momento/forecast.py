@@ -516,6 +516,74 @@ def pending_count(source: str) -> int:
     return int(row["c"]) if row else 0
 
 
+# drift threshold: how much the recent window may fall below baseline before
+# we call it degradation (absolute hit-rate points, e.g. 0.08 = 8 points).
+_DRIFT_TOLERANCE = 0.08
+
+
+def accuracy_drift(source: str) -> Dict[str, Any]:
+    """Self-awareness check: is realised accuracy drifting from its baseline?
+
+    Compares the recent window (last_50) against the longer baseline
+    (last_100, falling back to overall) and classifies the trend as
+    ``stable``, ``degrading`` or ``improving``. Reuses the existing Brier /
+    calibration scores so it stays consistent with :func:`accuracy`.
+    """
+    acc = accuracy(source)
+    total = int(acc.get("total", 0))
+
+    recent = float(acc.get("last_50", 0.0))
+    baseline = float(acc.get("last_100") or acc.get("overall", 0.0))
+    delta = round(recent - baseline, 4)
+
+    # Not enough resolved forecasts to say anything honest yet.
+    if total < 20:
+        return {
+            "status": "insufficient_data",
+            "drift_detected": False,
+            "recent": recent,
+            "baseline": baseline,
+            "delta": delta,
+            "tolerance": _DRIFT_TOLERANCE,
+            "brier": acc.get("brier", 0.0),
+            "calibration": acc.get("calibration", 0.0),
+            "total": total,
+            "reason": f"Need at least 20 resolved forecasts to assess drift (have {total}).",
+        }
+
+    if delta <= -_DRIFT_TOLERANCE:
+        status = "degrading"
+        reason = (
+            f"Recent accuracy ({recent:.0%}) is {abs(delta):.0%} below baseline "
+            f"({baseline:.0%}) — forecasts are losing edge."
+        )
+    elif delta >= _DRIFT_TOLERANCE:
+        status = "improving"
+        reason = (
+            f"Recent accuracy ({recent:.0%}) is {delta:.0%} above baseline "
+            f"({baseline:.0%}) — forecasts are sharpening."
+        )
+    else:
+        status = "stable"
+        reason = (
+            f"Recent accuracy ({recent:.0%}) is within {_DRIFT_TOLERANCE:.0%} of "
+            f"baseline ({baseline:.0%})."
+        )
+
+    return {
+        "status": status,
+        "drift_detected": status == "degrading",
+        "recent": recent,
+        "baseline": baseline,
+        "delta": delta,
+        "tolerance": _DRIFT_TOLERANCE,
+        "brier": acc.get("brier", 0.0),
+        "calibration": acc.get("calibration", 0.0),
+        "total": total,
+        "reason": reason,
+    }
+
+
 # ---------------------------------------------------------------------------
 # lightweight ensemble model (pure python, no sklearn dependency)
 # ---------------------------------------------------------------------------

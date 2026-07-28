@@ -40,6 +40,7 @@ def _snapshot(source: str) -> Dict[str, Any]:
 async def websocket_endpoint(socket: WebSocket, source: str = Query(default="aviator")) -> None:
     normalized = store.normalize_source(source)
     await hub.connect(socket)
+    await hub.subscribe(socket, normalized)
 
     try:
         await socket.send_json({"type": "connection:status", "payload": {"connected": True, "source": normalized}})
@@ -58,6 +59,7 @@ async def websocket_endpoint(socket: WebSocket, source: str = Query(default="avi
 
             if kind in ("subscribe", "source:change"):
                 normalized = requested
+                await hub.subscribe(socket, normalized)
                 await socket.send_json({"type": "snapshot", "payload": _snapshot(normalized)})
             elif kind == "refresh":
                 await socket.send_json({"type": "analysis:update", "payload": store.analysis_payload(requested, use_cache=False)})

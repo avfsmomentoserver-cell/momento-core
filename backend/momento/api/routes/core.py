@@ -28,6 +28,7 @@ async def health() -> Dict[str, Any]:
         "uptime_seconds": round(time.time() - _BOOTED_AT, 1),
         "database": db.stats(),
         "websocket": hub.stats(),
+        "realtime": hub.health(),
         "watcher": watcher.status(),
         "feed": feed.status(),
         "python": platform.python_version(),
@@ -66,6 +67,22 @@ async def engines_health() -> Dict[str, Any]:
         "data": {"sources": len(sources), "total_rounds": total_rounds},
         "timestamp": db.utc_now(),
     }
+
+
+@router.get("/realtime/health")
+async def realtime_health() -> Dict[str, Any]:
+    """Self-awareness snapshot of the realtime fan-out layer.
+
+    Surfaces broadcast latency (avg/p95 ms), throughput, dropped sockets and
+    per-type message counts so the platform can observe its own realtime
+    behaviour (v5 Foundation, self-awareness).
+    """
+    snapshot = hub.health()
+    p95 = float(snapshot.get("broadcast_latency_ms", {}).get("p95") or 0.0)
+    # Sub-second hot-path target; fan-out itself should stay well under 1s.
+    snapshot["status"] = "healthy" if p95 < 1000.0 else "degraded"
+    snapshot["timestamp"] = db.utc_now()
+    return snapshot
 
 
 @router.get("/versions")
