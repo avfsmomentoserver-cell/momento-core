@@ -1,0 +1,121 @@
+{
+  "milestone_id": "v6_001",
+  "title": "V6 foundations scaffolded, awaiting first execution",
+  "date": "2026-07-29",
+  "status": "awaiting_verification",
+  "summary": "Research suite, free-tier CI and local Debian harness written and committed to branches. Nothing has been executed yet: no pipeline has ever run on this project and the measured house edge is still unknown.",
+  "open_merge_requests": [
+    {
+      "iid": 3,
+      "branch": "research/csv-suite",
+      "title": "CSV-first walk-forward research suite",
+      "state": "open",
+      "verified": false,
+      "merge_order": 1,
+      "note": "Must merge before !5. pyproject.toml in !5 collects test_research_*.py, which only exists here."
+    },
+    {
+      "iid": 5,
+      "branch": "ci/free-tier-local-debian",
+      "title": "Free-tier pipeline + local Debian harness",
+      "state": "open",
+      "verified": false,
+      "merge_order": 2
+    }
+  ],
+  "delivered": {
+    "backend/research/": [
+      "loader.py: export parsing, ID dedupe, timestamp sort, invariant assertions",
+      "labels.py: moonshot-within-horizon target, trailing horizon excluded as None",
+      "splitter.py: expanding-window walk-forward folds with assert_causal",
+      "strategies.py: BaseRateStrategy and DryStreakStrategy on features.base.BaseFeature",
+      "metrics.py: Brier, skill score with paired bootstrap CI, calibration, hit rate, paper EV, drawdown",
+      "significance.py: permutation test over round order",
+      "runner.py: CLI emitting a JSON artifact"
+    ],
+    "tests": [
+      "backend/tests/conftest.py: puts backend/ on sys.path, replacing the /home/pirates hardcode",
+      "backend/tests/test_research_loader.py",
+      "backend/tests/test_research_suite.py"
+    ],
+    "ci": [
+      ".gitlab-ci.yml: lint + test, research manual, interruptible, one pipeline per change",
+      "Makefile: venv lint fmt test cov research audit verify clean",
+      "requirements-dev.txt, requirements-audit.txt, pyproject.toml"
+    ],
+    "docs": [
+      "docs/local-dev.md",
+      "docs/V6_IMPLEMENTATION_PLAN.md",
+      ".devin/skills/statistical-honesty.md",
+      ".devin/skills/research-suite.md",
+      ".devin/skills/debian-local-dev.md",
+      ".devin/workflows/v6-handover.md"
+    ],
+    "removed": [
+      "Six legacy print scripts in backend/tests/ — hardcoded /home/pirates path, printed rather than asserted, required a live DB"
+    ]
+  },
+  "verified_facts": {
+    "points_formula": "100 + 30*log2(multiplier), confirmed in linguistics.to_points, rounded to 3dp",
+    "points_formula_equivalent": "100 + 43.2809*ln(multiplier); 30/ln2 = 43.2809",
+    "bands": "Ten entries in linguistics.BANDS, lower bound inclusive, cosmic open-ended. 2.0 is 'base', not 'low'",
+    "existing_phase_splitter": "momento.backtest.split_test_phases provides 10/60/30 warmup/normal/stress; reused via splitter.phase_view with an inline fallback to stay DB-free",
+    "feature_contract": "features.base.BaseFeature requires compute, backtest, get_metrics, get_name, get_description",
+    "export_schema": "ID,Timestamp,Multiplier,Color,Band,Points,Ingest Method",
+    "full_tape": "eagle-eye-export-2026-07-28__1_.csv, ~15469 rounds, all ten bands",
+    "filtered_tape": "eagle-eye-export-2026-07-28.csv, ~1484 rounds, >=10x only, a strict subset of the full tape"
+  },
+  "blockers": [
+    {
+      "id": "cuda_requirements",
+      "severity": "high",
+      "description": "backend/requirements.txt pins torch, tensorrt and cupy-cuda12x. All need CUDA; tensorrt is not installable from PyPI. Any CI job or GPU-less VM installing it fails at setup. Most likely reason no pipeline ever ran on this project.",
+      "status": "partially_resolved",
+      "resolution": "!5 splits requirements-dev.txt (pytest + ruff) and requirements-audit.txt (numpy/pandas/scipy). backend/research/ is pure stdlib, so the test and research loop needs only pytest.",
+      "remaining": "Split backend/requirements-api.txt from backend/requirements-gpu.txt so the API server runs on a no-GPU VM. Verify GPU modules degrade gracefully and add a test asserting it. Tracked in #15."
+    },
+    {
+      "id": "unmeasured_house_edge",
+      "severity": "high",
+      "description": "The house edge c is still assumed at ~0.97 rather than measured. #11, #12 and #14 all depend on it.",
+      "status": "open",
+      "resolution": "Run 'make research CSV=clean_data.csv' and 'make audit', commit as research report 001. G1 missingness gates the G3 edge estimate."
+    },
+    {
+      "id": "namespace_split",
+      "severity": "low",
+      "description": "Parent epic lives in momento-group1 while the project lives in avfsmomentoserver1, so epic rollup is broken.",
+      "status": "open",
+      "resolution": "Issue #19 supersedes it as the V6/V7 hub."
+    },
+    {
+      "id": "possible_committed_token",
+      "severity": "high",
+      "description": "gilabtoke.md in the repo root may contain a GitLab token.",
+      "status": "open",
+      "resolution": "Review; if it holds a credential, rotate it and purge from history."
+    }
+  ],
+  "work_items": {
+    "hub": 19,
+    "foundations": [7, 8, 18, 16, 9],
+    "inventions": [13, 12, 10],
+    "products": [11, 14, 17, 15]
+  },
+  "next_actions": [
+    "make venv && make verify on the Debian VM",
+    "Merge !3 then !5, in that order",
+    "make research CSV=clean_data.csv PERMUTATIONS=200; commit as research/reports/001-baseline-clean-data.json",
+    "make audit CSV=clean_data.csv to establish missingness before trusting c",
+    "Split requirements-api from requirements-gpu (#15)",
+    "Build #8 contracts, then #9 lexicon, then #16 promotion gate"
+  ],
+  "expected_outcome_of_report_001": {
+    "note": "Recorded in advance so the result cannot be rationalised after the fact. This is pre-registration in spirit.",
+    "skill_score": "~0 with a 95% CI spanning zero",
+    "permutation_percentile": "below 95",
+    "dry_streak_table": "flat across streak buckets",
+    "c": "~0.97, subject to missingness bias",
+    "interpretation": "All of the above constitute a PASS. A null is the correct result for a provably fair game and must not be tuned away."
+  }
+}
