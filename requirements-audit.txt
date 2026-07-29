@@ -1,0 +1,11 @@
+# Optional numeric extras.
+#
+# Needed only by tools/eagle_eye_audit.py (the distribution-fit and independence
+# suite). Not required by backend/research/, which is pure stdlib, so it stays
+# out of the default test loop to keep a clean Debian install fast and offline.
+#
+#     pip install -r requirements-audit.txt
+
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.11.0

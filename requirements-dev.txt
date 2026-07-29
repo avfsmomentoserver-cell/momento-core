@@ -1,0 +1,13 @@
+# Minimal dependency set for linting and testing.
+#
+# Deliberately excludes the GPU stack in requirements.txt (torch, tensorrt,
+# cupy-cuda12x), which needs CUDA and cannot install on a free-tier CI runner or
+# a plain Debian box. The research suite in backend/research/ is pure stdlib, so
+# the test loop needs almost nothing.
+#
+#     python -m venv .venv && . .venv/bin/activate
+#     pip install -r requirements-dev.txt
+
+pytest==8.3.4
+pytest-cov==6.0.0
+ruff==0.8.4

@@ -1,0 +1,45 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["backend", "tools"]
+extend-exclude = [
+    "backend/v5_realtime",
+    "backend/gpu_intelligence",
+    "backend/cpu_intelligence",
+    "backend/advanced_intelligence",
+    "backend/performance",
+]
+
+[tool.ruff.lint]
+# Intentionally narrow to start. The point of the initial gate is that it passes
+# on the existing tree, so it can be ratcheted per MR instead of being disabled
+# the first time it blocks someone.
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "C4"]
+ignore = [
+    "E501",  # line length is handled by the formatter
+    "B008",  # FastAPI Depends() in defaults is the documented pattern
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/*" = ["E402"]  # conftest sets sys.path before importing
+
+[tool.pytest.ini_options]
+# Only the assertable suites. The legacy print scripts in backend/tests are
+# excluded by name until they are ported or removed (see #7).
+testpaths = ["backend/tests"]
+python_files = ["test_research_*.py"]
+addopts = "-q --strict-markers"
+markers = [
+    "slow: excluded from the default run; select with -m slow",
+]
+
+[tool.coverage.run]
+source = ["backend/research"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
