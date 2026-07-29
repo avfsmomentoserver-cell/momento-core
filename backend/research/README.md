@@ -14,14 +14,39 @@ independent gates.
 
 ```bash
 cd backend
-python -m research.report            # full verdict, writes research-report.json
-python -m pytest tests -v            # the test suite
-python -m pytest tests -m "not slow" # skip the resampling-heavy tests
+python3 -m venv .venv
+.venv/bin/pip install pytest        # not requirements.txt
+.venv/bin/python -m pytest tests -v
+.venv/bin/python -m research.report # writes research-report.json
 ```
 
 No database, no network and no GPU stack required. Every statistic is
 implemented on the standard library in `research/stats.py`, so the suite runs
-in CI and inside an audit unchanged.
+in CI and inside an audit unchanged. Installing `requirements.txt` is
+unnecessary and slow: it pulls torch, TensorRT and CuPy, none of which this
+suite imports.
+
+### Cost and the free tier
+
+Permutation testing is the only expensive part. Each iteration reshuffles the
+whole outcome vector, and five signals over ~15,400 decision points adds up
+quickly. The smallest p-value a permutation test can report is
+`1 / (iterations + 1)`, so 400 iterations already resolves the 0.01 threshold
+every gate uses.
+
+| Path | Permutations | Command |
+| --- | --- | --- |
+| CI / free tier | 400 | `pytest tests -m "not slow"` |
+| Release / audit | 2,000 | `pytest tests` |
+
+The GitLab free tier allows 400 compute minutes per month. The `research:suite`
+job skips the slow battery, caches pip, sets `interruptible: true` so a
+superseded pipeline is cancelled rather than paid for, and uses `rules:changes`
+so unrelated commits spend nothing. The full battery lives in `research:full`,
+which is `when: manual`.
+
+To avoid using the quota entirely, register a local runner with the shell
+executor and the same jobs run on your machine for free.
 
 ## API
 
@@ -31,6 +56,9 @@ in CI and inside an audit unchanged.
 | `GET /api/v1/research/report` | Full verdict (`tape=csv` or `tape=live`) |
 | `GET /api/v1/research/cashout-profile` | Return per unit staked at each cashout target |
 | `GET /api/v1/research/independence` | Pressure, serial and gap independence tests |
+
+The two endpoints that permute default to 400 iterations and cap at 2,000, so a
+single request cannot stall the event loop on a full-tape run.
 
 ## The theory being tested
 
