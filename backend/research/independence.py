@@ -327,6 +327,7 @@ def test_pressure_release(
     rounds: Sequence[Dict[str, Any]],
     lookback: int = 40,
     horizon: int = DEFAULT_HORIZON,
+    permutations: int = 2000,
 ) -> Dict[str, Any]:
     """Evaluate the accumulation/release hypothesis in its strongest forms.
 
@@ -334,6 +335,11 @@ def test_pressure_release(
     about to release", expressed only from rounds strictly before the decision
     point. All are tested with the same causal harness and multiplicity-aware
     thresholds.
+
+    `permutations` is the cost driver: each signal shuffles the full outcome
+    vector that many times. The smallest reportable p-value is
+    `1 / (permutations + 1)`, so 400 still resolves the 0.01 threshold every
+    gate uses while running roughly five times faster.
     """
 
     def drought(window: Sequence[float]) -> bool:
@@ -379,7 +385,14 @@ def test_pressure_release(
     }
 
     results = [
-        signal_lift(rounds, signal, name, lookback=lookback, horizon=horizon)
+        signal_lift(
+            rounds,
+            signal,
+            name,
+            lookback=lookback,
+            horizon=horizon,
+            permutations=permutations,
+        )
         for name, signal in signals.items()
     ]
 
@@ -387,6 +400,7 @@ def test_pressure_release(
     return {
         "lookback": lookback,
         "horizon": horizon,
+        "permutations": permutations,
         "signals_tested": len(results),
         "results": results,
         "actionable_signals": [r["signal"] for r in actionable],

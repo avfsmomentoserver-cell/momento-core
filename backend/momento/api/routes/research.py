@@ -88,6 +88,7 @@ async def research_report(
     limit: int = Query(20000, ge=500, le=MAX_LIVE_ROUNDS),
     horizon: int = Query(10, ge=1, le=100),
     lookback: int = Query(40, ge=10, le=500),
+    permutations: int = Query(400, ge=100, le=2000),
 ) -> Dict[str, Any]:
     """Run the full falsification suite and return a single verdict.
 
@@ -100,7 +101,7 @@ async def research_report(
     * `inconclusive` — insufficient or unvalidated data.
     """
     _, report_module = _load_research()
-    config = {"horizon": horizon, "lookback": lookback}
+    config = {"horizon": horizon, "lookback": lookback, "permutations": permutations}
 
     if tape == "live":
         rounds = _live_rounds(source, limit)
@@ -166,6 +167,16 @@ async def independence_check(
     limit: int = Query(20000, ge=500, le=MAX_LIVE_ROUNDS),
     horizon: int = Query(10, ge=1, le=100),
     lookback: int = Query(40, ge=10, le=500),
+    permutations: int = Query(
+        400,
+        ge=100,
+        le=2000,
+        description=(
+            "Permutation iterations per signal. Each one reshuffles the full "
+            "outcome vector, so high values make the request slow. 400 still "
+            "resolves the 0.01 significance threshold."
+        ),
+    ),
 ) -> Dict[str, Any]:
     """Test whether accumulated pressure predicts a release.
 
@@ -190,7 +201,7 @@ async def independence_check(
     multipliers = [float(r["multiplier"]) for r in rounds]
     return {
         "pressure_release": independence.test_pressure_release(
-            rounds, lookback=lookback, horizon=horizon
+            rounds, lookback=lookback, horizon=horizon, permutations=permutations
         ),
         "serial_structure": independence.serial_structure(multipliers),
         "gap_independence": independence.gap_independence(multipliers),

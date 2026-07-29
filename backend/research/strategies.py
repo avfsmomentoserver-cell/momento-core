@@ -107,8 +107,9 @@ class PressureReleaseStrategy(BaseFeature):
     def backtest(self, rounds: Sequence[Dict[str, Any]], config: Dict[str, Any]) -> Dict[str, Any]:
         horizon = int(config.get("horizon", self.horizon))
         lookback = int(config.get("lookback", self.lookback))
+        permutations = int(config.get("permutations", 2000))
         outcome = independence.test_pressure_release(
-            rounds, lookback=lookback, horizon=horizon
+            rounds, lookback=lookback, horizon=horizon, permutations=permutations
         )
         return {
             "strategy": self.get_name(),
