@@ -1,0 +1,16 @@
+# V5 GPU Intelligence Dependencies
+# PyTorch with CUDA support (install with correct CUDA version)
+# Note: Install with: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+
+# TensorRT for model optimization (requires CUDA 12.2+)
+# Note: Install from NVIDIA wheels: https://developer.nvidia.com/tensorrt
+tensorrt>=8.6.0
+
+# CuPy for GPU-accelerated NumPy operations
+cupy-cuda12x>=13.0.0
+
+# Optional: torch2trt for PyTorch to TensorRT conversion
+# torch2trt>=0.4.0
