@@ -1,0 +1,33 @@
+# Research suite — runs on every change to the backend or the exports.
+#
+# The suite is stdlib-only by design, so this job needs no service container,
+# no database and no GPU image.
+
+stages:
+  - test
+
+research:suite:
+  stage: test
+  image: python:3.11-slim
+  variables:
+    PYTHONDONTWRITEBYTECODE: "1"
+  before_script:
+    - python -m pip install --quiet --upgrade pip
+    - python -m pip install --quiet pytest
+  script:
+    - cd backend
+    - python -m pytest tests -v --junitxml=../research-junit.xml
+    - python -m research.report | tee ../research-report.txt
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - research-report.txt
+      - research-report.json
+    reports:
+      junit: research-junit.xml
+  rules:
+    - changes:
+        - backend/**/*
+        - eagle-eye-export-*.csv
+        - .gitlab-ci.yml
