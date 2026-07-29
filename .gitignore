@@ -22,3 +22,15 @@ downloads/*.zip
 # Build output
 dist/
 build/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+report.xml
+.cache/
+
+# Generated analysis reports — reproduce with `make research` / `make audit`
+research-report.json
+audit-report.json
