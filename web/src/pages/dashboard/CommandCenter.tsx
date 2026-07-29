@@ -42,14 +42,14 @@ export default function CommandCenter() {
 
   const allRoundsQuery = useQuery({
     queryKey: ["command-center-rounds", source],
-    queryFn: () => api.rounds(source, 80, 0, "desc", "file"),
+    queryFn: () => api.rounds(source, 80, 0, "desc"),
     refetchInterval: POLL.rounds,
     staleTime: 1500,
   });
 
   const fileAnalysisQuery = useQuery({
     queryKey: ["command-center-analysis", source],
-    queryFn: () => api.analysis(source, 600, "file"),
+    queryFn: () => api.analysis(source, 600),
     refetchInterval: false, // Only update on new round WebSocket events
     staleTime: 30000,
   });

@@ -31,7 +31,7 @@ export default function EagleEye() {
   const [range3Min, setRange3Min] = useState<number>(10);
   const [range3Max, setRange3Max] = useState<number>(100);
   const [colorFilter, setColorFilter] = useState<string>("all");
-  const [ingestMethodFilter, setIngestMethodFilter] = useState<string>("file");
+  const [ingestMethodFilter, setIngestMethodFilter] = useState<string>("all");
   const [selectedSession, setSelectedSession] = useState<string>("all");
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);

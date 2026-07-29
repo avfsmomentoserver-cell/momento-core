@@ -19,19 +19,19 @@ export default function Resistance() {
 
   const resistanceQuery = useQuery({
     queryKey: ["resistance", source],
-    queryFn: () => api.resistance(source, "file"),
+    queryFn: () => api.resistance(source),
     refetchInterval: POLL.analysis,
   });
 
   const ceilingQuery = useQuery({
     queryKey: ["ceiling", source],
-    queryFn: () => api.ceiling(source, "file"),
+    queryFn: () => api.ceiling(source),
     refetchInterval: POLL.analysis,
   });
 
   const gapQuery = useQuery({
     queryKey: ["gap-swing", source],
-    queryFn: () => api.gapSwing(source, "file"),
+    queryFn: () => api.gapSwing(source),
     refetchInterval: POLL.analysis,
   });
 

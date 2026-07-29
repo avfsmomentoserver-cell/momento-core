@@ -42,6 +42,7 @@ import { ProfessionalCandleChart, convertToLightweightCandles } from '@/componen
 import { DrawingManager, useDrawingManager } from '@/components/charts/DrawingManager';
 import { TimeframeManager, useTimeframeManager } from '@/components/charts/TimeframeManager';
 import { multiplier } from '@/lib/format';
+import { PatternCard } from '@/components/patterns/PatternCard';
 import { calculateAllIndicators, detectIndicatorSignals } from '@/lib/invent-middleware/technicalIndicators';
 import { createPatternDetectionEngine } from '@/lib/invent-middleware/patternDetection';
 
@@ -573,47 +574,23 @@ const MomentoFX: React.FC = () => {
                   <p>No patterns detected</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {patterns.map((pattern) => (
-                    <div
+                    <PatternCard
                       key={pattern.id}
-                      className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${pattern.bullish ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                          {pattern.bullish ? (
-                            <TrendingUp className="w-4 h-4 text-green-400" />
-                          ) : (
-                            <TrendingDown className="w-4 h-4 text-red-400" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-medium">{pattern.name}</div>
-                          <div className="text-xs text-gray-400">{pattern.description}</div>
-                          <div className="flex gap-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {pattern.type}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              {pattern.timeframe}
-                            </Badge>
-                          </div>
-                          {pattern.target_price && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              Target: {pattern.target_price.toFixed(2)}x
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={pattern.bullish ? 'bg-green-500/20 text-green-400 border-green-500' : 'bg-red-500/20 text-red-400 border-red-500'}>
-                          {(pattern.confidence * 100).toFixed(0)}%
-                        </Badge>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {new Date(pattern.detected_at).toLocaleTimeString()}
-                        </div>
-                      </div>
-                    </div>
+                      pattern={{
+                        id: pattern.id,
+                        name: pattern.name,
+                        pattern_type: pattern.type,
+                        description: pattern.description,
+                        confidence: pattern.confidence,
+                        target_price: pattern.target_price,
+                        bullish: pattern.bullish,
+                        type: pattern.type,
+                        timeframe: pattern.timeframe,
+                      }}
+                      size="sm"
+                    />
                   ))}
                 </div>
               )}

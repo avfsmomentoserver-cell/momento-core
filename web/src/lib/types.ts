@@ -529,6 +529,157 @@ export interface AutopilotStatus {
   pending: number;
 }
 
+export interface MegaplanInstruction {
+  action: "ENTER" | "PREPARE" | "WAIT" | "STAND_DOWN";
+  headline: string;
+  detail: string;
+  position_size: number;
+  target_multiplier: number;
+  stop_multiplier: number;
+  confidence: number;
+  precision_level: "CONSERVATIVE" | "MODERATE" | "AGGRESSIVE" | "DYNAMIC";
+  reasoning: Record<string, unknown>;
+  recovery_plan: MegaplanRecoveryPlan | null;
+  chase_plan: MegaplanChasePlan | null;
+  risk_analysis: MegaplanRiskAnalysis;
+  expected_outcome: MegaplanExpectedOutcome;
+  execution_conditions: string[];
+  safety_checks: MegaplanSafetyCheck[];
+}
+
+export interface MegaplanRecoveryPlan {
+  active: boolean;
+  strategy: string | null;
+  current_step: number;
+  max_steps: number;
+  recovery_multiplier: number;
+  progress: number;
+  estimated_recovery_rounds: number;
+}
+
+export interface MegaplanChasePlan {
+  active: boolean;
+  strategy: string | null;
+  target_multiplier: number;
+  current_step: number;
+  expected_value: number;
+  risk_reward_ratio: number;
+  max_steps: number;
+}
+
+export interface MegaplanRiskAnalysis {
+  risk_amount: number;
+  potential_reward: number;
+  risk_reward_ratio: number;
+  probability_of_loss: number;
+  expected_loss: number;
+  expected_gain: number;
+  expected_value: number;
+  risk_level: string;
+  position_risk_pct: number;
+}
+
+export interface MegaplanExpectedOutcome {
+  scenarios: Array<{ probability: number; multiplier: number; outcome: string }>;
+  expected_multiplier: number;
+  expected_pnl: number;
+  upside_potential: number;
+  downside_risk: number;
+}
+
+export interface MegaplanSafetyCheck {
+  type: string;
+  status: "pass" | "fail";
+  message: string;
+  limit: string;
+}
+
+export interface MegaplanPlan {
+  source?: string;
+  settings: Record<string, string | number | boolean>;
+  context: {
+    confidence: number;
+    market_state: string;
+    opportunity_score: number;
+    risk_appetite: number;
+    volatility: number;
+  };
+  bankroll_state: {
+    current_bankroll: number;
+    initial_bankroll: number;
+    daily_pnl: number;
+    daily_loss_limit: number;
+    max_drawdown: number;
+    current_drawdown: number;
+    consecutive_losses: number;
+    consecutive_wins: number;
+    win_rate: number;
+    total_trades: number;
+    average_win: number;
+    average_loss: number;
+    risk_per_round: number;
+    risk_level: string;
+    last_updated: string;
+  };
+  instruction: MegaplanInstruction;
+  recovery_plan: MegaplanRecoveryPlan | null;
+  chase_plan: MegaplanChasePlan | null;
+  reasoning: Record<string, unknown>;
+  risk_analysis: MegaplanRiskAnalysis;
+  expected_outcome: MegaplanExpectedOutcome;
+  execution_conditions: string[];
+  safety_checks: MegaplanSafetyCheck[];
+  generated_at: string;
+}
+
+export interface MegaplanBankrollState {
+  source: string;
+  bankroll_state: {
+    current_bankroll: number;
+    initial_bankroll: number;
+    daily_pnl: number;
+    daily_loss_limit: number;
+    max_drawdown: number;
+    current_drawdown: number;
+    consecutive_losses: number;
+    consecutive_wins: number;
+    win_rate: number;
+    total_trades: number;
+    average_win: number;
+    average_loss: number;
+    risk_per_round: number;
+    risk_level: string;
+    last_updated: string;
+  };
+}
+
+export interface MegaplanBacktestResult {
+  strategy: string;
+  initial_bankroll: number;
+  final_bankroll: number;
+  total_pnl: number;
+  pnl_percentage: number;
+  total_recovery_periods?: number;
+  successful_recoveries?: number;
+  recovery_success_rate?: number;
+  total_chase_attempts?: number;
+  successful_chases?: number;
+  chase_success_rate?: number;
+  total_chase_cost?: number;
+  average_chase_cost?: number;
+}
+
+export interface MegaplanStrategyComparison {
+  recovery_strategies: Record<string, MegaplanBacktestResult>;
+  chase_strategies: Record<string, MegaplanBacktestResult>;
+  recommendations: {
+    best_recovery_strategy: string;
+    best_recovery_pnl: number;
+    best_chase_strategy: string;
+    best_chase_pnl: number;
+  };
+}
+
 export interface EquityPoint {
   index: number;
   time: string;

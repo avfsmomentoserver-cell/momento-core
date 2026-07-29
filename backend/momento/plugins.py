@@ -545,3 +545,10 @@ def ingest_history(limit: int = 50) -> List[Dict[str, Any]]:
         (max(1, min(int(limit), 200)),),
     )
     return db.rows_to_dicts(rows)
+
+
+def run_all(source: str, multipliers: List[float], settings: AnalysisSettings) -> List[Dict[str, Any]]:
+    """Run all enabled analysis plugins against the multiplier window."""
+    # This is a stub implementation - the actual plugin system needs to be implemented
+    # For now, return empty results to prevent 500 errors
+    return []

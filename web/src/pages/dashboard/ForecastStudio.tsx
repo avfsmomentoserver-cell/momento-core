@@ -35,7 +35,7 @@ export default function ForecastStudio() {
 
   const mlQuery = useQuery({
     queryKey: ["ml", source],
-    queryFn: () => api.ml(source, "file"),
+    queryFn: () => api.ml(source),
     refetchInterval: POLL.analysis,
   });
 

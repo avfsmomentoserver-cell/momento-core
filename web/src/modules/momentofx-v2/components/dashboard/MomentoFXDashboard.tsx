@@ -18,6 +18,7 @@ import { KPITile } from '../shared/KPITile';
 import { PatternBadge } from '../shared/PatternBadge';
 import { PressureGauge } from '../shared/PressureGauge';
 import { SurvivalChart } from '../shared/SurvivalChart';
+import { PatternCard } from '@/components/patterns/PatternCard';
 
 // Import custom hooks
 import { useAnalytics, usePressureScore } from '../../hooks/useAnalytics';
@@ -224,43 +225,26 @@ export function MomentoFXDashboard() {
               <CardTitle>Pattern Detection</CardTitle>
             </CardHeader>
             <CardContent>
-              {patterns.length === 0 ? (
+              {!patterns || patterns.length === 0 ? (
                 <p className="text-muted-foreground">No patterns detected</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {patterns.map((pattern) => (
-                    <Card key={pattern.id}>
-                      <CardHeader>
-                        <CardTitle className="text-sm">
-                          <PatternBadge
-                            patternName={pattern.pattern_type}
-                            confidence={pattern.confidence}
-                            probability={pattern.probability}
-                          />
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <p className="text-xs text-muted-foreground">{pattern.explanation}</p>
-                        {pattern.target_price && (
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Target</span>
-                            <span className="font-medium">{pattern.target_price.toFixed(2)}x</span>
-                          </div>
-                        )}
-                        {pattern.stop_loss && (
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Stop Loss</span>
-                            <span className="font-medium">{pattern.stop_loss.toFixed(2)}x</span>
-                          </div>
-                        )}
-                        {pattern.risk_reward_ratio && (
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">R:R Ratio</span>
-                            <span className="font-medium">{pattern.risk_reward_ratio.toFixed(2)}</span>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                    <PatternCard
+                      key={pattern.id}
+                      pattern={{
+                        id: pattern.id,
+                        name: pattern.pattern_type,
+                        pattern_type: pattern.pattern_type,
+                        description: pattern.explanation,
+                        confidence: pattern.confidence,
+                        probability: pattern.probability,
+                        target_price: pattern.target_price,
+                        stop_loss: pattern.stop_loss,
+                        risk_reward_ratio: pattern.risk_reward_ratio,
+                      }}
+                      size="sm"
+                    />
                   ))}
                 </div>
               )}

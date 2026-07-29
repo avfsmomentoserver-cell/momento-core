@@ -8,3 +8,4 @@
  */
 
 export { MomentoFXDashboard } from './components/dashboard/MomentoFXDashboard';
+export { MomentoFX2Dashboard } from './components/dashboard/MomentoFX2Dashboard';

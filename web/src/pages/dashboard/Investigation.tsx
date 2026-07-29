@@ -68,7 +68,6 @@ export default function Investigation() {
         window_size: windowSize,
         min_session_rounds: minSessionRounds,
         max_rounds: maxRounds,
-        ingest_method: "file",
         feature_toggles: Object.keys(featureToggles).length > 0 ? featureToggles : undefined,
       };
       return api.backtestRun(source, config as Record<string, unknown>);

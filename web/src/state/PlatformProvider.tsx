@@ -86,14 +86,14 @@ export function PlatformProvider({ children }: { children: ReactNode }) {
 
   const analysisQuery = useQuery({
     queryKey: ["analysis", source],
-    queryFn: () => api.analysis(source, undefined, "file"),
+    queryFn: () => api.analysis(source),
     refetchInterval: connected ? POLL.slow : POLL.analysis,
     staleTime: 1500,
   });
 
   const roundsQuery = useQuery({
     queryKey: ["rounds", source],
-    queryFn: () => api.rounds(source, ROUND_BUFFER, 0, "desc", "file"),
+    queryFn: () => api.rounds(source, ROUND_BUFFER, 0, "desc"),
     refetchInterval: connected ? POLL.slow : POLL.rounds,
     staleTime: 1500,
   });

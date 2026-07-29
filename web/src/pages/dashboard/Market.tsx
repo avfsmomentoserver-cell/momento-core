@@ -27,13 +27,13 @@ export default function Market() {
 
   const candlesQuery = useQuery({
     queryKey: ["candles", source, windowSize, perCandle],
-    queryFn: () => api.candles(source, windowSize, perCandle, "file"),
+    queryFn: () => api.candles(source, windowSize, perCandle),
     refetchInterval: POLL.analysis,
   });
 
   const pointsQuery = useQuery({
     queryKey: ["points", source, windowSize],
-    queryFn: () => api.points(source, windowSize, "file"),
+    queryFn: () => api.points(source, windowSize),
     refetchInterval: POLL.analysis,
   });
 

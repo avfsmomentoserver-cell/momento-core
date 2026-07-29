@@ -32,6 +32,7 @@ import Linguistics from "./pages/dashboard/Linguistics";
 import Market from "./pages/dashboard/Market";
 import MoonshotFinder from "./pages/dashboard/MoonshotFinder";
 import MegaPressureTracker from "./pages/dashboard/MegaPressureTracker";
+import MegaplanOrchestrator from "./pages/dashboard/MegaplanOrchestrator";
 import MomentoFX from "./pages/dashboard/MomentoFX";
 import { MomentoFXDashboard } from "./modules/momentofx-v2";
 import PatternDnaTracker from "./pages/dashboard/PatternDnaTracker";
@@ -90,12 +91,15 @@ const App = () => (
               <Route path="/dashboard/ingest" element={<Ingest />} />
               <Route path="/dashboard/investigation" element={<Investigation />} />
               <Route path="/dashboard/eagle-eye" element={<EagleEye />} />
+              <Route path="/dashboard/linguistics" element={<Linguistics />} />
               <Route path="/dashboard/sources" element={<Sources />} />
               <Route path="/dashboard/birdeye" element={<BirdEye />} />
               <Route path="/dashboard/build-steps" element={<BuildSteps />} />
               <Route path="/dashboard/settings" element={<Settings />} />
               <Route path="/dashboard/users" element={<Users />} />
               <Route path="/dashboard/testing" element={<RoundTesting />} />
+              <Route path="/dashboard/autopilot" element={<Autopilot />} />
+              <Route path="/dashboard/megaplan" element={<MegaplanOrchestrator />} />
 
               {/* admin */}
               <Route path="/dashboard/admin" element={<AdminDashboard />} />

@@ -81,14 +81,14 @@ export default function Landing() {
 
   const roundsQuery = useQuery({
     queryKey: ["landing-rounds"],
-    queryFn: () => api.rounds("aviator", 60, 0, "desc", "file"),
+    queryFn: () => api.rounds("aviator", 60, 0, "desc"),
     refetchInterval: POLL.analysis,
     retry: 1,
   });
 
   const analysisQuery = useQuery({
     queryKey: ["landing-analysis"],
-    queryFn: () => api.analysis("aviator", 300, "file"),
+    queryFn: () => api.analysis("aviator", 300),
     refetchInterval: POLL.analysis,
     retry: 1,
   });

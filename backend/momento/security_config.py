@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import logging
 
-from .tls_config import SecurityHeaderConfig, TLSVersion
+from .security.tls_config import SecurityHeaderConfig, TLSVersion
 
 logger = logging.getLogger(__name__)
 

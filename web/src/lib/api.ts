@@ -33,6 +33,9 @@ import type {
   IngestLogEntry,
   LinguisticsPayload,
   MegaScore,
+  MegaplanBankrollState,
+  MegaplanPlan,
+  MegaplanStrategyComparison,
   MlPredictions,
   MoonshotEta,
   OrchestratorModule,
@@ -337,6 +340,29 @@ export const api = {
       method: "PUT",
       body,
     }),
+
+  /* ---- megaplan orchestrator ------------------------------------------- */
+  megaplan: (source: string) => request<MegaplanPlan>(`/megaplan${qs({ source })}`),
+  megaplanSettings: () =>
+    request<{
+      settings: Record<string, string | number | boolean>;
+      recovery_strategies: Array<{ id: string; label: string; description: string }>;
+      chase_strategies: Array<{ id: string; label: string; description: string }>;
+    }>("/megaplan/settings"),
+  updateMegaplanSettings: (body: Record<string, string | number | boolean>) =>
+    request<{
+      settings: Record<string, string | number | boolean>;
+      recovery_strategies: Array<{ id: string; label: string; description: string }>;
+      chase_strategies: Array<{ id: string; label: string; description: string }>;
+    }>("/megaplan/settings", { method: "PUT", body }),
+  megaplanBankroll: (source: string) =>
+    request<MegaplanBankrollState>(`/megaplan/bankroll${qs({ source })}`),
+  backtestRecoveryStrategy: (source: string, strategy: string) =>
+    request<Record<string, unknown>>(`/megaplan/backtest/recovery${qs({ source, strategy })}`, { method: "POST" }),
+  backtestChaseStrategy: (source: string, strategy: string) =>
+    request<Record<string, unknown>>(`/megaplan/backtest/chase${qs({ source, strategy })}`, { method: "POST" }),
+  compareStrategies: (source: string) =>
+    request<MegaplanStrategyComparison>(`/megaplan/backtest/compare${qs({ source })}`),
 
   /* ---- autopilot -------------------------------------------------------- */
   autopilotStatus: (source: string) => request<AutopilotStatus>(`/autopilot/status${qs({ source })}`),

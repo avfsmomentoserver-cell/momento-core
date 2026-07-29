@@ -18,7 +18,7 @@ export default function MoonshotFinder() {
 
   const moonshotQuery = useQuery({
     queryKey: ["moonshot", source],
-    queryFn: () => api.moonshot(source, "file"),
+    queryFn: () => api.moonshot(source),
     refetchInterval: POLL.analysis,
   });
 

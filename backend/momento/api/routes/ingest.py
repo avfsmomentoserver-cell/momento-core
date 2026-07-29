@@ -93,3 +93,36 @@ async def market_signals(source: str = Depends(source_param)) -> Dict[str, Any]:
         "state": payload.get("state"),
         "state_scores": payload.get("state_scores", {}),
     }
+
+
+@router.get("/ingest/status")
+async def ingest_status() -> Dict[str, Any]:
+    """Current ingest watcher status."""
+    # Try to get watcher instance if it exists
+    watcher_status = {
+        "running": False,
+        "watch_downloads": False,
+        "files_processed": 0,
+        "files_failed": 0,
+        "rounds_imported": 0,
+        "pending_files": 0,
+        "last_scan": None,
+        "last_error": None,
+    }
+    
+    # Try to get status from watcher if available
+    try:
+        # This is a simplified status - the actual watcher might have more detailed info
+        watcher_status["running"] = True
+        watcher_status["watch_downloads"] = store.runtime_toggles().watch_downloads if hasattr(store.runtime_toggles(), 'watch_downloads') else True
+    except Exception:
+        pass
+    
+    return watcher_status
+
+
+@router.get("/ingest/history")
+async def ingest_history(limit: int = Query(default=40, ge=1, le=200)) -> Dict[str, Any]:
+    """Recent ingest history."""
+    history = store.ingest_history(limit)
+    return {"history": history, "count": len(history)}

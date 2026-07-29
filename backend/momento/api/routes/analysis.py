@@ -84,7 +84,7 @@ async def ceiling_analyzer(
     settings = store.analysis_settings()
     rounds = store.history(source, 600, ingest_method=ingest_method)
     multipliers = [float(r["multiplier"]) for r in rounds]
-    result = plugins.collapse_ceiling_analyzer(multipliers, settings, {"weight": 1.0, "threshold": 0.45})
+    result = engine.collapse_ladder(multipliers, settings)
     return {"source": source, "analyzer": "collapse_ceiling", **result}
 
 
@@ -97,8 +97,8 @@ async def gap_swing_analyzer(
     settings = store.analysis_settings()
     rounds = store.history(source, 600, ingest_method=ingest_method)
     multipliers = [float(r["multiplier"]) for r in rounds]
-    result = plugins.gap_swing_analyzer(multipliers, settings, {"weight": 1.0, "threshold": 0.4})
-    return {"source": source, "analyzer": "gap_swing", "detail_series": engine.gap_swing(multipliers), **result}
+    result = engine.gap_swing(multipliers)
+    return {"source": source, "analyzer": "gap_swing", "detail_series": result}
 
 
 @router.get("/analysis/dna")

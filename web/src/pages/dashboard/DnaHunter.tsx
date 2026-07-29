@@ -27,7 +27,7 @@ export default function DnaHunter() {
 
   const dnaQuery = useQuery({
     queryKey: ["dna", source, tolerance, windowSize],
-    queryFn: () => api.dna(source, tolerance, windowSize, "file"),
+    queryFn: () => api.dna(source, tolerance, windowSize),
     refetchInterval: POLL.slow,
   });
 

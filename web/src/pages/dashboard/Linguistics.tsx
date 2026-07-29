@@ -22,7 +22,7 @@ export default function Linguistics() {
 
   const linguisticsQuery = useQuery({
     queryKey: ["linguistics", source],
-    queryFn: () => api.linguistics(source, "file"),
+    queryFn: () => api.linguistics(source),
     refetchInterval: POLL.analysis,
   });
 

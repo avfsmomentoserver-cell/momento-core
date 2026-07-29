@@ -7,7 +7,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ... import autopilot as autopilot_engine
-from ... import db, orchestrator, plugins, store
+from ... import db, megaplan_orchestrator, orchestrator, plugins, store
 from ...hub import hub
 from ..deps import current_user, operator_user, source_param
 from ..schemas import (
@@ -191,3 +191,124 @@ async def autopilot_reset(
     deleted = autopilot_engine.reset(source)
     db.log_audit(user["email"], "autopilot_reset", {"source": source, "deleted": deleted})
     return {"deleted": deleted, "status": autopilot_engine.status(source)}
+
+
+@router.get("/health")
+async def engines_health() -> Dict[str, Any]:
+    """Health status of all analysis engines."""
+    toggles = store.runtime_toggles()
+    
+    return {
+        "status": "healthy",
+        "engines": {
+            "signal_engine": toggles.signal_engine if hasattr(toggles, 'signal_engine') else True,
+            "forecast_engine": toggles.forecast_engine if hasattr(toggles, 'forecast_engine') else True,
+            "ml_predictions": toggles.ml_predictions if hasattr(toggles, 'ml_predictions') else False,
+        },
+        "timestamp": db.utc_now(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# megaplan orchestrator
+# ---------------------------------------------------------------------------
+
+@router.get("/megaplan")
+async def megaplan_plan(source: str = Depends(source_param)) -> Dict[str, Any]:
+    """Generate comprehensive megaplan with dynamic decision-making."""
+    payload = store.analysis_payload(source)
+    return {"source": source, **megaplan_orchestrator.megaplan_plan(payload)}
+
+
+@router.get("/megaplan/settings")
+async def megaplan_settings() -> Dict[str, Any]:
+    """Get megaplan orchestrator settings."""
+    return {
+        "settings": megaplan_orchestrator.megaplan_settings(),
+        "recovery_strategies": [
+            {"id": key, **value} for key, value in megaplan_orchestrator.RECOVERY_STRATEGIES.items()
+        ],
+        "chase_strategies": [
+            {"id": key, **value} for key, value in megaplan_orchestrator.CHASE_STRATEGIES.items()
+        ],
+    }
+
+
+@router.put("/megaplan/settings")
+async def update_megaplan_settings(
+    body: OrchestratorSettingsRequest,
+    user: Dict[str, Any] = Depends(operator_user),
+) -> Dict[str, Any]:
+    """Update megaplan orchestrator settings."""
+    updated = megaplan_orchestrator.update_megaplan_settings(body.model_dump(exclude_none=True))
+    db.log_audit(user["email"], "megaplan_settings", updated)
+    return {
+        "settings": updated,
+        "recovery_strategies": [
+            {"id": key, **value} for key, value in megaplan_orchestrator.RECOVERY_STRATEGIES.items()
+        ],
+        "chase_strategies": [
+            {"id": key, **value} for key, value in megaplan_orchestrator.CHASE_STRATEGIES.items()
+        ],
+    }
+
+
+@router.get("/megaplan/bankroll")
+async def megaplan_bankroll(source: str = Depends(source_param)) -> Dict[str, Any]:
+    """Get current bankroll state."""
+    bankroll_state = megaplan_orchestrator.get_bankroll_state(source)
+    return {
+        "source": source,
+        "bankroll_state": {
+            "current_bankroll": bankroll_state.current_bankroll,
+            "initial_bankroll": bankroll_state.initial_bankroll,
+            "daily_pnl": bankroll_state.daily_pnl,
+            "daily_loss_limit": bankroll_state.daily_loss_limit,
+            "max_drawdown": bankroll_state.max_drawdown,
+            "current_drawdown": bankroll_state.current_drawdown,
+            "consecutive_losses": bankroll_state.consecutive_losses,
+            "consecutive_wins": bankroll_state.consecutive_wins,
+            "win_rate": bankroll_state.win_rate,
+            "total_trades": bankroll_state.total_trades,
+            "average_win": bankroll_state.average_win,
+            "average_loss": bankroll_state.average_loss,
+            "risk_per_round": bankroll_state.risk_per_round,
+            "risk_level": bankroll_state.risk_level,
+            "last_updated": bankroll_state.last_updated,
+        },
+    }
+
+
+@router.post("/megaplan/backtest/recovery")
+async def backtest_recovery_strategy(
+    source: str = Depends(source_param),
+    strategy: str = Query(..., description="Recovery strategy to backtest"),
+    user: Dict[str, Any] = Depends(current_user),
+) -> Dict[str, Any]:
+    """Backtest a recovery strategy on historical data."""
+    result = megaplan_orchestrator.backtest_recovery_strategy(source, strategy)
+    db.log_audit(user["email"], "megaplan_backtest_recovery", {"source": source, "strategy": strategy})
+    return result
+
+
+@router.post("/megaplan/backtest/chase")
+async def backtest_chase_strategy(
+    source: str = Depends(source_param),
+    strategy: str = Query(..., description="Chase strategy to backtest"),
+    user: Dict[str, Any] = Depends(current_user),
+) -> Dict[str, Any]:
+    """Backtest a chase strategy on historical data."""
+    result = megaplan_orchestrator.backtest_chase_strategy(source, strategy)
+    db.log_audit(user["email"], "megaplan_backtest_chase", {"source": source, "strategy": strategy})
+    return result
+
+
+@router.get("/megaplan/backtest/compare")
+async def compare_strategies(
+    source: str = Depends(source_param),
+    user: Dict[str, Any] = Depends(current_user),
+) -> Dict[str, Any]:
+    """Compare all recovery and chase strategies."""
+    result = megaplan_orchestrator.compare_strategies(source)
+    db.log_audit(user["email"], "megaplan_compare_strategies", {"source": source})
+    return result

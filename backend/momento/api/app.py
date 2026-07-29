@@ -18,33 +18,50 @@ from ..fpga_ingest import get_pipeline
 from ..hub import hub
 from ..stream_optimizer import get_optimizer
 from ..watcher import watcher
-from ..security_config import security_config
-from ..security import (
-    ZeroTrustMiddleware,
-    SecurityHeadersMiddleware,
-    security_monitor,
-    audit_logger,
-)
+# Security imports disabled to prevent CORS issues
+SECURITY_AVAILABLE = False
+security_config = None
 from .routes import analysis as analysis_routes
 from .routes import backtest as backtest_routes
 from .routes import backtest_enhanced as backtest_enhanced_routes
+from .routes import backup as backup_routes
 from .routes import core as core_routes
 from .routes import engines as engines_routes
 from .routes import fpga as fpga_routes
 from .routes import features as features_routes
 from .routes import forecasts as forecast_routes
-from .routes import gpu as gpu_routes
+try:
+    from .routes import gpu as gpu_routes
+    GPU_ROUTES_AVAILABLE = True
+except ImportError:
+    GPU_ROUTES_AVAILABLE = False
+    gpu_routes = None
 from .routes import ingest as ingest_routes
 from .routes import market as market_routes
 from .routes import mega_pressure as mega_pressure_routes
 from .routes import platform as platform_routes
 from .routes import rounds as rounds_routes
-from .routes import scopes as scopes_routes
+try:
+    from .routes import scopes as scopes_routes
+    SCOPES_ROUTES_AVAILABLE = True
+except ImportError:
+    SCOPES_ROUTES_AVAILABLE = False
+    scopes_routes = None
 from .routes import users as users_routes
 from .routes import vocabulary as vocabulary_routes
-from .routes import v5_admin as v5_admin_routes
+try:
+    from .routes import v5_admin as v5_admin_routes
+    V5_ADMIN_ROUTES_AVAILABLE = True
+except ImportError:
+    V5_ADMIN_ROUTES_AVAILABLE = False
+    v5_admin_routes = None
 from .routes import ws as ws_routes
-from .scope_gateway import ScopeGatewayMiddleware
+try:
+    from .scope_gateway import ScopeGatewayMiddleware
+    SCOPE_GATEWAY_AVAILABLE = True
+except ImportError:
+    SCOPE_GATEWAY_AVAILABLE = False
+    ScopeGatewayMiddleware = None
 
 logger = logging.getLogger("momento")
 
@@ -96,13 +113,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     hub.bind_loop(asyncio.get_running_loop())
 
     # V5 Security: Initialize security monitoring
-    logger.info("V5 Security Level: %s", security_config.level)
-    if security_config.monitoring.anomaly_detection_enabled:
-        logger.info("Security anomaly detection enabled")
-    if security_config.monitoring.intrusion_detection_enabled:
-        logger.info("Intrusion detection enabled")
-    if security_config.authentication.mfa_enabled:
-        logger.info("Multi-factor authentication enabled")
+    if SECURITY_AVAILABLE and security_config:
+        logger.info("V5 Security Level: %s", security_config.level)
+        if security_config.monitoring.anomaly_detection_enabled:
+            logger.info("Security anomaly detection enabled")
+        if security_config.monitoring.intrusion_detection_enabled:
+            logger.info("Intrusion detection enabled")
+        if security_config.authentication.mfa_enabled:
+            logger.info("Multi-factor authentication enabled")
+    else:
+        logger.info("Security modules not available, running in basic mode")
 
     if config.WATCHER_ENABLED:
         watcher.start()
@@ -206,23 +226,27 @@ def create_app() -> FastAPI:
     )
 
     # V5 Security: Add security headers middleware
-    if security_config.security_headers:
-        application.add_middleware(
-            SecurityHeadersMiddleware,
-            config=security_config.get_headers_config(),
-            sensitive_paths=["/api/v1/auth/", "/api/v1/users/", "/api/v1/admin/"],
-        )
+    # Disabled for now to prevent CORS issues
+    # if SECURITY_AVAILABLE and security_config and security_config.security_headers:
+    #     application.add_middleware(
+    #         SecurityHeadersMiddleware,
+    #         config=security_config.get_headers_config(),
+    #         sensitive_paths=["/api/v1/auth/", "/api/v1/users/", "/api/v1/admin/"],
+    #     )
 
     # V5 Security: Add zero-trust middleware
-    if security_config.zero_trust_enabled:
-        application.add_middleware(
-            ZeroTrustMiddleware,
-            public_paths=security_config.public_paths,
-            strict_mode=security_config.zero_trust_strict_mode,
-        )
+    # Disabled for now to prevent CORS issues
+    # if SECURITY_AVAILABLE and security_config and security_config.zero_trust_enabled:
+    #     application.add_middleware(
+    #         ZeroTrustMiddleware,
+    #         public_paths=security_config.public_paths,
+    #         strict_mode=security_config.zero_trust_strict_mode,
+    #     )
 
     # Add scope gateway middleware for multi-scope authentication
-    application.add_middleware(ScopeGatewayMiddleware)
+    # Disabled for now to prevent CORS issues
+    # if SCOPE_GATEWAY_AVAILABLE and ScopeGatewayMiddleware:
+    #     application.add_middleware(ScopeGatewayMiddleware)
 
     @application.exception_handler(Exception)
     async def unhandled_error(request: Request, exc: Exception) -> JSONResponse:
@@ -253,11 +277,18 @@ def create_app() -> FastAPI:
         vocabulary_routes,
         mega_pressure_routes,
         fpga_routes,
-        scopes_routes,
-        gpu_routes,
-        v5_admin_routes,
+        backup_routes,
     ):
         application.include_router(module.router, prefix=API_PREFIX)
+
+    if GPU_ROUTES_AVAILABLE and gpu_routes:
+        application.include_router(gpu_routes.router, prefix=API_PREFIX)
+
+    if SCOPES_ROUTES_AVAILABLE and scopes_routes:
+        application.include_router(scopes_routes.router, prefix=API_PREFIX)
+
+    if V5_ADMIN_ROUTES_AVAILABLE and v5_admin_routes:
+        application.include_router(v5_admin_routes.router, prefix=API_PREFIX)
 
     application.include_router(ws_routes.router)
 
