@@ -44,13 +44,13 @@ audit-deps: venv ## Install numpy/pandas/scipy for the audit tool
 
 .PHONY: lint
 lint: venv ## Lint and format-check (same as CI)
-	$(RUFF) check backend tools
-	$(RUFF) format --check backend tools
+	$(RUFF) check backend
+	$(RUFF) format --check backend
 
 .PHONY: fmt
 fmt: venv ## Apply formatting and safe fixes
-	$(RUFF) format backend tools
-	$(RUFF) check --fix backend tools
+	$(RUFF) format backend
+	$(RUFF) check --fix backend
 
 .PHONY: test
 test: venv ## Run the assertable test suite (same as CI)
