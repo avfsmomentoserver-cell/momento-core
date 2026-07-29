@@ -32,6 +32,15 @@
         "coordinator": "ag_admin",
         "specialists": ["ag_backend", "ag_devops", "ag_forecast"]
       },
+      "v6": {
+        "workflow": "v6-handover",
+        "description": "V6 honest-by-construction platform: measured claims, promotion-gated lexicon, local-first on Debian",
+        "triggers": ["/v6", "/v6 handover", "/v6 report", "/v6 next", "/v6 research", "/v6 lexicon"],
+        "coordinator": "ag_admin",
+        "specialists": ["ag_arch", "ag_backend", "ag_frontend", "ag_devops", "ag_forecast", "ag_qa", "ag_docs"],
+        "required_skills": ["statistical-honesty", "research-suite", "debian-local-dev"],
+        "memory": "./memory/v6_milestone_001.json"
+      },
       "all_prompts": {
         "workflow": "standard-task",
         "description": "Default entry point for all chat prompts",
@@ -45,6 +54,9 @@
   "skills_directory": "./skills/",
   "workflows_directory": "./workflows/",
   "coding_standards": "./CODING_STANDARDS.md",
+  "always_read_first": [
+    "./skills/statistical-honesty.md"
+  ],
   "behavior": {
     "fallback_hierarchy": [
       "skills",

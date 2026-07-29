@@ -1,0 +1,60 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "verify",
+      "detail": "lint + test, exactly what CI runs",
+      "type": "shell",
+      "command": "make verify",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "make test",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "fmt",
+      "type": "shell",
+      "command": "make fmt",
+      "problemMatcher": []
+    },
+    {
+      "label": "research",
+      "detail": "Walk-forward + permutation null. CPU-heavy; minutes, not seconds.",
+      "type": "shell",
+      "command": "make research CSV=${input:csvPath} PERMUTATIONS=${input:permutations}",
+      "problemMatcher": []
+    },
+    {
+      "label": "audit",
+      "detail": "Data-quality audit. Run before trusting the measured house edge.",
+      "type": "shell",
+      "command": "make audit CSV=${input:csvPath}",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "csvPath",
+      "type": "pickString",
+      "description": "Which tape?",
+      "options": [
+        "clean_data.csv",
+        "eagle-eye-export-2026-07-28__1_.csv",
+        "eagle-eye-export-2026-07-28.csv"
+      ],
+      "default": "clean_data.csv"
+    },
+    {
+      "id": "permutations",
+      "type": "pickString",
+      "description": "Permutations (higher is a tighter null, and slower)",
+      "options": ["50", "200", "500"],
+      "default": "200"
+    }
+  ]
+}

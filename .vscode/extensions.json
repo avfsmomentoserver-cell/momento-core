@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "GitLab.gitlab-workflow",
+    "tamasfe.even-better-toml",
+    "ms-vscode.makefile-tools",
+    "ms-vscode-remote.remote-ssh"
+  ],
+  "unwantedRecommendations": [
+    "ms-python.autopep8",
+    "ms-python.black-formatter",
+    "ms-python.flake8",
+    "ms-python.isort"
+  ]
+}
